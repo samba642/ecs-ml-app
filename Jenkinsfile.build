@@ -4,7 +4,7 @@ pipeline {
     environment {
         AWS_REGION      = 'us-east-1'
         ECR_REPO_NAME   = 'mlops-ecs-cluster'
-        GIT_REPO_URL    = 'ecs-ml-app'
+        GIT_REPO_URL    = 'https://github.com/samba642/ecs-ml-app.git'
         CREDENTIALS_ID  = 'aws-credentials-id'
     }
     
