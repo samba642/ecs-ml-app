@@ -1,0 +1,59 @@
+pipeline {
+    agent { label 'mlops-agent' }
+    
+    environment {
+        AWS_REGION      = 'us-east-1'
+        ECR_REPO_NAME   = 'mlops-ecs-cluster'
+        GIT_REPO_URL    = 'ecs-ml-app'
+        CREDENTIALS_ID  = 'aws-credentials-id'
+    }
+    
+    stages {
+        stage( '1. Checkout Code from Git' ) {
+            steps {
+                echo 'Pulling latest MLOps code from Git...'
+                git branch: 'main', url: "${env.GIT_REPO_URL}"
+            }
+        }
+        
+        stages( '2. Code Lint & Unit Test') {
+            steps {
+                echo 'Running Python syntax check...'
+                sh 'python3 -m py_compile app.py'
+            }
+        }
+        
+        stages( '3. Build & Push Docker Image to ECR') {
+            steps {
+                // Securely inject AWS Credentials into the environment
+                withAWS(credentials: "${env.CREDENTIALS_ID}", region: "${env.AWS_REGION}") {
+                    sh '''
+                        AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+                        ECR_URL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
+                        
+                        echo "Authenticating Docker with AWS ECR..."
+                        aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                        
+                        echo "Building Docker container..."
+                        docker build -t ${ECR_REPO_NAME}:latest .
+                        docker tag ${ECR_REPO_NAME}:latest ${ECR_URL}:latest
+                        
+                        echo "Pushing image to ECR..."
+                        docker push ${ECR_URL}:latest
+                    '''    
+                }
+            }
+        }
+        
+        post {
+            success {
+                echo 'Build and ECR push successful! Triggering deployment pipeline...'
+                // Chained Orchestration Trigger
+                build job: 'mlops-02-deploy-ecs', wait: false
+            }
+            failure {
+                echo 'Pipeline failed during build or test. Stopping deployment.'
+            }
+        }
+    }
+}
