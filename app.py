@@ -12,4 +12,4 @@ def predict():
     return jsonify({"prediction": [0.87], "model_version": "v1.0"}), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=5000)
