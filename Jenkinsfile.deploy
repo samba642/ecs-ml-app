@@ -1,0 +1,38 @@
+pipeline {
+    agent { label 'mlops-agent'}
+    
+    environment {
+        AWS_REGION     = 'us-east-1'
+        ECS_CLUSTER    = 'mlops-ecs-cluster'
+        ECS_SERVICE    = 'ml-api-service'
+        CREDENTIALS_ID = 'aws-credentials-id'
+    }
+    
+    stages {
+        stage('1. Deploy update image to ECS') {
+            steps {
+                withAWS(credentials: "${env.CREDENTIALS_ID}", region: "${env.AWS_REGION}") {
+                    echo 'Triggering ECS Fargate rolling deployment...'
+                    sh '''
+                        aws ecs update-service \
+                          --cluster ${ECS_CLUSTER} \
+                          --service ${ECS_SERVICE} \
+                          --force-new-deployment
+                    '''
+                }
+            }
+        }
+        stage('2. Verify Deployment Status') {
+            steps {
+                withAWS(credentials: "${env.CREDENTIALS_ID}", region: "${env.AWS_REGION}") {
+                    echo 'Checking ECS service roll-out status...'
+                    sh '''
+                        aws ecs wait services-stable \
+                          --cluster ${ECS_CLUSTER} \
+                          --services ${ECS_SERVICE}
+                    '''
+                }
+            }
+        }
+    }
+}
