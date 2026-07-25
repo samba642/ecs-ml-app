@@ -16,14 +16,14 @@ pipeline {
             }
         }
         
-        stages( '2. Code Lint & Unit Test') {
+        stage( '2. Code Lint & Unit Test') {
             steps {
                 echo 'Running Python syntax check...'
                 sh 'python3 -m py_compile app.py'
             }
         }
         
-        stages( '3. Build & Push Docker Image to ECR') {
+        stage( '3. Build & Push Docker Image to ECR') {
             steps {
                 // Securely inject AWS Credentials into the environment
                 withAWS(credentials: "${env.CREDENTIALS_ID}", region: "${env.AWS_REGION}") {
