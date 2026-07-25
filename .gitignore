@@ -1,0 +1,11 @@
+# Terraform local state files
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Docker temporary logs
+*.log
