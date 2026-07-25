@@ -45,15 +45,14 @@ pipeline {
             }
         }
         
-        post {
-            success {
-                echo 'Build and ECR push successful! Triggering deployment pipeline...'
-                // Chained Orchestration Trigger
-                build job: 'mlops-02-deploy-ecs', wait: false
-            }
-            failure {
-                echo 'Pipeline failed during build or test. Stopping deployment.'
-            }
+    post {
+        success {
+            echo 'Build and ECR push successful! Triggering deployment pipeline...'
+            // Chained Orchestration Trigger
+            build job: 'mlops-02-deploy-ecs', wait: false
+        }
+        failure {
+            echo 'Pipeline failed during build or test. Stopping deployment.'
         }
     }
 }
